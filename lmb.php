@@ -36,8 +36,15 @@ class LMBField extends TextboxField implements AnnotatedField {
 		return $a->annotate([
 			$b =>
 				TicketThread::objects()
-				->filter(['ticket__ticket_id' => new SqlField('ticket_id', 1)])
-				->exclude(['entries__flags__hasbit' => ThreadEntry::FLAG_HIDDEN])
+				->filter([
+					'ticket__ticket_id' => new SqlField('ticket_id', 1)
+				])
+				->exclude([
+					'entries__flags__hasbit' => ThreadEntry::FLAG_HIDDEN
+				])
+				->exclude([
+					'entries__type' => 'N'
+				])
 				->order_by('entries__id', QuerySet::DESC)
 				->limit(1)
 				->values('entries__poster')
