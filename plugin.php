@@ -4,9 +4,9 @@
 return [
     'id'          => 'osticket:wpzthemes',
     'version'     => '0.1.0',
-    'name'        => 'Last Message By Field',
+    'name'        => 'Themes',
     'author'      => 'Aspen Grove Studios',
     'description' => '',
     'url'         => 'https://wpzone.co/',
-    'plugin'      => 'lmb.php:WPZThemesPlugin',
+    'plugin'      => 'theme.php:WPZThemesPlugin',
 ];
