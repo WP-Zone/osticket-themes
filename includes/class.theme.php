@@ -25,6 +25,13 @@ abstract class OsTicketTheme {
 					.implode("\n", array_map([$this, 'getScriptHtml'], $this->getHeaderScripts()));
 			$output = substr($output, 0, $headPos).$extraHead.substr($output, $headPos);
 		}
+		
+		$bodyPos = stripos($output, '</body>');
+		if ($bodyPos !== false) {
+			$extraFoot = implode("\n", array_map([$this, 'getScriptHtml'], $this->getFooterScripts()));
+			$output = substr($output, 0, $bodyPos).$extraFoot.substr($output, $bodyPos);
+		}
+		
 		return $output;
 	}
 	
@@ -46,6 +53,10 @@ abstract class OsTicketTheme {
 	abstract function getName();
 	
 	function getHeaderScripts() {
+		return [];
+	}
+	
+	function getFooterScripts() {
 		return [];
 	}
 	

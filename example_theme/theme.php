@@ -15,5 +15,9 @@ class ExampleTheme extends OsTicketTheme {
 		return [ ];
 	}
 	
+	function getFooterScripts() {
+		return [ ];
+	}
+	
 	
 }
