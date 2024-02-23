@@ -2,7 +2,7 @@
 // This file was modified by Jonathan Hall on 2024-02-22
 
 abstract class OsTicketTheme {
-	const THEMES_DIR = INCLUDE_DIR.'themes/';
+	const THEMES_DIR = ROOT_DIR.'themes/';
 	protected $themeId;
 	
 	function __construct($themeId) {
@@ -15,15 +15,21 @@ abstract class OsTicketTheme {
 	function init() {
 		global $ost;
 		
-		$extraHead = implode("\n", array_map([$this, 'getStyleHtml'], $this->getHeaderStyles()))
+		ob_start([$this, 'processOutput']);
+	}
+	
+	function processOutput($output) {
+		$headPos = stripos($output, '</head>');
+		if ($headPos !== false) {
+			$extraHead = implode("\n", array_map([$this, 'getStyleHtml'], $this->getHeaderStyles()))
 					.implode("\n", array_map([$this, 'getScriptHtml'], $this->getHeaderScripts()));
-		if ($extraHead) {
-			$ost->addExtraHeader($extraHead);
+			$output = substr($output, 0, $headPos).$extraHead.substr($output, $headPos);
 		}
+		return $output;
 	}
 	
 	function getBaseUrl() {
-		return osTicket::get_base_url().'include/themes/'.$this->themeId.'/';
+		return osTicket::get_base_url().'themes/'.$this->themeId.'/';
 	}
 	
 	protected function getScriptHtml($url) {
@@ -51,7 +57,7 @@ abstract class OsTicketTheme {
 	/** Static **/
 	
 	private static function validateThemeId($themeId) {
-		return !preg_match('/[^[:alnum:]\\-_]/', $themeId);
+		return !preg_match('/[^[:alnum:]_]/', $themeId);
 	}
 	
 	static function getThemes() {
@@ -66,11 +72,17 @@ abstract class OsTicketTheme {
 	}
 	
 	static function getTheme($themeId) {
-		if (!self::validateThemeId($themeId) || !file_exists(self::THEMES_DIR.$dirItem.'/theme.php')) {
+		if (!self::validateThemeId($themeId) || !file_exists(self::THEMES_DIR.$themeId.'/theme.php')) {
 			throw new Exception('Invalid theme ID');
 		}
 		
-		$themeClass = include_once(self::THEMES_DIR.$themeId.'/theme.php');
+		$themeFile = self::THEMES_DIR.$themeId.'/theme.php';
+		
+		preg_match('/class\\s+([^\\{\\s]+)/i', file_get_contents($themeFile), $themeClassMatch);
+		
+		include_once($themeFile);
+		
+		$themeClass = empty($themeClassMatch[1]) ? null : trim($themeClassMatch[1]);
 		
 		if (!$themeClass || !class_exists($themeClass)) {
 			throw new Exception('Invalid theme (missing class)');

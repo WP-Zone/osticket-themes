@@ -8,5 +8,5 @@ return [
     'author'      => 'Aspen Grove Studios',
     'description' => '',
     'url'         => 'https://wpzone.co/',
-    'plugin'      => 'theme.php:WPZThemesPlugin',
+    'plugin'      => 'themes.php:WPZThemesPlugin',
 ];

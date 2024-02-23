@@ -17,5 +17,3 @@ class ExampleTheme extends OsTicketTheme {
 	
 	
 }
-
-return 'ExampleTheme';

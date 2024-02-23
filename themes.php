@@ -35,7 +35,7 @@ class WPZThemesPluginConfig extends PluginConfig {
 				'hint' => '',
 				'choices' => array_merge(['' => 'Default'], OsTicketTheme::getThemes()),
 				'default' => ''
-			]);
+			])
 		];
 	}
 }
