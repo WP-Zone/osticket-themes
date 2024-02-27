@@ -1,9 +1,14 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-02-22
+// This file was modified by Jonathan Hall on 2024-02-27
 
 abstract class OsTicketTheme {
 	const THEMES_DIR = ROOT_DIR.'themes/';
 	protected $themeId;
+	protected $inCapture;
+	protected $inElement;
+	protected $openElements = 0;
+	protected $currentCapture = '';
+	protected $captures = [];
 	
 	function __construct($themeId) {
 		if (!self::validateThemeId($themeId)) {
@@ -19,6 +24,8 @@ abstract class OsTicketTheme {
 	}
 	
 	function processOutput($output) {
+		global $thisstaff;
+		
 		$headPos = stripos($output, '</head>');
 		if ($headPos !== false) {
 			$extraHead = implode("\n", array_map([$this, 'getStyleHtml'], $this->getHeaderStyles()))
@@ -32,7 +39,145 @@ abstract class OsTicketTheme {
 			$output = substr($output, 0, $bodyPos).$extraFoot.substr($output, $bodyPos);
 		}
 		
+		if ($thisstaff) {
+			$capture = [
+				'topnav' => ' id="info"',
+				'logo' => ' id="logo"',
+				'nav' => ' id="nav"',
+				'subnav' => '<nav ',
+				'footer' => ' id="footer"'
+			];
+			$templates = [
+				'header' => [
+					'contains' => ['topnav', 'logo']
+				],
+				'nav' => [
+					'contains' => ['nav', 'subnav']
+				],
+				'footer' => [
+					'contains' => ['footer'],
+					'wrapInLast' => true
+				]
+			];
+			$output = $this->doCapture($output, $capture, $templates);
+		} else {
+			$capture = [
+				'topnav' => ' class="pull-right flush-right"',
+				'logo' => ' id="logo"',
+				'nav' => ' id="nav"',
+				'landing' => ' id="landing_page"',
+				'footer' => ' id="footer"'
+			];
+			$templates = [
+				'header' => [
+					'contains' => ['topnav', 'logo']
+				],
+				'nav' => [
+					'contains' => ['nav']
+				],
+				'footer' => [
+					'contains' => ['footer'],
+					'wrapInLast' => true
+				],
+				'landing_page' => [
+					'contains' => ['landing'],
+					'wrapInLast' => true
+				]
+			];
+			$output = $this->doCapture($output, $capture, $templates);
+		}
+			
+			
+			
 		return $output;
+	}
+	
+	function doCapture($output, $capture, $templates) {
+		global $thisstaff;
+		if ($this->inCapture) {
+			$outputTags = explode('<', $output);
+			foreach ($outputTags as $i => $outputTag) {
+				if (in_array(substr($outputTag, 0, strlen($this->inElement) + 1), [$this->inElement.' ', $this->inElement.'>',], true)) {
+					++$this->openElements;
+				} else if (substr($outputTag, 0, strlen($this->inElement) + 2) == '/'.$this->inElement.'>') {
+					if ($this->openElements) {
+						--$this->openElements;	
+					} else {
+						$outputTag = substr($outputTag, strlen($this->inElement) + 2);
+						foreach ($templates as $templateId => $templateData) {
+							if (in_array($this->inCapture, $templateData['contains'])) {
+								$template = $templateId;
+								break;
+							}
+						}
+						
+						$this->currentCapture .= '</'.$this->inElement.'>';
+						$this->captures[ $this->inCapture ] = $this->currentCapture;
+
+						if ($template && file_exists(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php')) {
+							if (end($templates[$template]['contains']) == $this->inCapture) {
+								$captureReplacementStart = '';
+								$captureReplacementEnd = '';
+								if (!empty($templates[$template]['wrapInLast'])) {
+									$firstTagClosePos = strpos($this->currentCapture, '>');
+									$lastTagOpenPos = strrpos($this->currentCapture, '<');
+									if ($firstTagClosePos && $lastTagOpenPos) {
+										$captureReplacementStart = substr($this->currentCapture, 0, $firstTagClosePos + 1);
+										$captureReplacementEnd = substr($this->currentCapture, $lastTagOpenPos);
+										$this->captures[ $this->inCapture ] = substr($this->currentCapture, $firstTagClosePos + 1, $lastTagOpenPos - $firstTagClosePos - 1);
+									}
+								}
+								
+								$captureReplacement = $captureReplacementStart.$this->getTemplate(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php').$captureReplacementEnd;
+							} else {
+								$captureReplacement = '';
+							}
+						} else {
+							$captureReplacement = $this->currentCapture;
+						}
+
+
+						$this->inElement = null;
+
+						$this->currentCapture = '';
+						$this->inCapture = null;
+
+						return $captureReplacement
+							.$this->doCapture(
+							$outputTag.(count($outputTags) > $i + 1 ? '<'.implode('<', array_slice($outputTags, $i + 1)) : ''),
+							$capture,
+							$templates
+						);
+					}
+				}
+				
+				$this->currentCapture .= ($i ? '<' : '').$outputTag;
+			}
+
+		} else {
+			foreach (array_diff_key($capture, $this->captures) as $captureKey => $captureMatch) {
+				$capturePos = strpos($output, $captureMatch);
+				if ($capturePos !== false) {
+					$tagStart = strrpos($output, '<', $capturePos - strlen($output));
+					if ($tagStart !== false) {
+						$tagNameEnd = strpos($output, ' ', $tagStart);
+						$tagEnd = strpos($output, '>', $tagNameEnd) + 1;
+						$this->inElement = substr($output, $tagStart + 1, $tagNameEnd - $tagStart - 1);
+						$this->inCapture = $captureKey;
+						
+						$this->currentCapture .= substr($output, $tagStart, $tagEnd - $tagStart);
+						
+						return substr($output, 0, $tagStart).$this->doCapture( substr($output, $tagEnd), $capture, $templates );
+					}
+				}
+			}
+		}
+		return $output;
+	}
+	
+	protected function getTemplate($path) {
+		extract($this->captures);
+		return include $path;
 	}
 	
 	function getBaseUrl() {
