@@ -1,5 +1,5 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-02-22
+// This file was modified by Jonathan Hall on 2024-03-08
 
 class ExampleTheme extends OsTicketTheme {
 	
@@ -7,15 +7,15 @@ class ExampleTheme extends OsTicketTheme {
 		return 'Example Theme';
 	}
 	
-	function getHeaderStyles() {
+	function getHeaderStyles($isStaffView) {
 		return [ $this->getBaseUrl().'style.css' ];
 	}
 	
-	function getHeaderScripts() {
+	function getHeaderScripts($isStaffView) {
 		return [ ];
 	}
 	
-	function getFooterScripts() {
+	function getFooterScripts($isStaffView) {
 		return [ ];
 	}
 	

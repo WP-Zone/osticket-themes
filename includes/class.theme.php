@@ -1,5 +1,5 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-02-27
+// This file was modified by Jonathan Hall on 2024-03-08
 
 abstract class OsTicketTheme {
 	const THEMES_DIR = ROOT_DIR.'themes/';
@@ -28,14 +28,14 @@ abstract class OsTicketTheme {
 		
 		$headPos = stripos($output, '</head>');
 		if ($headPos !== false) {
-			$extraHead = implode("\n", array_map([$this, 'getStyleHtml'], $this->getHeaderStyles()))
-					.implode("\n", array_map([$this, 'getScriptHtml'], $this->getHeaderScripts()));
+			$extraHead = implode("\n", array_map([$this, 'getStyleHtml'], $this->getHeaderStyles(!empty($thisstaff))))
+					.implode("\n", array_map([$this, 'getScriptHtml'], $this->getHeaderScripts(!empty($thisstaff))));
 			$output = substr($output, 0, $headPos).$extraHead.substr($output, $headPos);
 		}
 		
 		$bodyPos = stripos($output, '</body>');
 		if ($bodyPos !== false) {
-			$extraFoot = implode("\n", array_map([$this, 'getScriptHtml'], $this->getFooterScripts()));
+			$extraFoot = implode("\n", array_map([$this, 'getScriptHtml'], $this->getFooterScripts(!empty($thisstaff))));
 			$output = substr($output, 0, $bodyPos).$extraFoot.substr($output, $bodyPos);
 		}
 		
@@ -197,15 +197,15 @@ abstract class OsTicketTheme {
 	
 	abstract function getName();
 	
-	function getHeaderScripts() {
+	function getHeaderScripts($isStaffView) {
 		return [];
 	}
 	
-	function getFooterScripts() {
+	function getFooterScripts($isStaffView) {
 		return [];
 	}
 	
-	function getHeaderStyles() {
+	function getHeaderStyles($isStaffView) {
 		return [];
 	}
 	
