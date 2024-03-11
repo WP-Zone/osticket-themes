@@ -9,6 +9,8 @@ abstract class OsTicketTheme {
 	protected $openElements = 0;
 	protected $currentCapture = '';
 	protected $captures = [];
+	protected $buffer = [];
+	protected $bufferRelease = [];
 	
 	function __construct($themeId) {
 		if (!self::validateThemeId($themeId)) {
@@ -88,7 +90,8 @@ abstract class OsTicketTheme {
 			];
 			$templates = [
 				'header' => [
-					'contains' => ['topnav', 'logo']
+					'contains' => ['topnav', 'logo'],
+					'holdUntil' => ['nav', 'footer']
 				],
 				'nav' => [
 					'contains' => ['nav', 'subnav']
@@ -109,7 +112,8 @@ abstract class OsTicketTheme {
 			];
 			$templates = [
 				'header' => [
-					'contains' => ['topnav', 'logo']
+					'contains' => ['topnav', 'logo'],
+					'holdUntil' => ['nav', 'footer']
 				],
 				'nav' => [
 					'contains' => ['nav']
@@ -167,12 +171,37 @@ abstract class OsTicketTheme {
 									}
 								}
 								
-								$captureReplacement = $captureReplacementStart.$this->getTemplate(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php').$captureReplacementEnd;
+								if (!empty($templates[$template]['holdUntil'])) {
+									$this->bufferRelease = $templates[$template]['holdUntil'];
+								}
+								
+								if ($this->bufferRelease) {
+									$captureReplacement = '';
+									$this->buffer[] = $captureReplacementStart;
+									$this->buffer[] = new FutureTemplate(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php');
+									$this->buffer[] = $captureReplacementEnd;
+								} else {
+									$captureReplacement = $captureReplacementStart.$this->getTemplate(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php').$captureReplacementEnd;
+								}
 							} else {
 								$captureReplacement = '';
 							}
 						} else {
-							$captureReplacement = $this->currentCapture;
+							if ($this->bufferRelease) {
+								$captureReplacement = '';
+								$this->buffer[] = $this->currentCapture;
+							} else {
+								$captureReplacement = $this->currentCapture;
+							}
+						}
+						
+						$buffer = '';
+						if (in_array($template, $this->bufferRelease, true)) {
+							foreach ($this->buffer as $bufferItem) {
+								$buffer .= is_a($bufferItem, 'FutureTemplate') ? $this->getTemplate($bufferItem->templatePath) : $bufferItem;
+							}
+							$this->bufferRelease = [];
+							$this->buffer = [];
 						}
 
 
@@ -181,7 +210,8 @@ abstract class OsTicketTheme {
 						$this->currentCapture = '';
 						$this->inCapture = null;
 
-						return $captureReplacement
+						return $buffer
+							.$captureReplacement
 							.$this->doCapture(
 							$outputTag.(count($outputTags) > $i + 1 ? '<'.implode('<', array_slice($outputTags, $i + 1)) : ''),
 							$capture,
@@ -206,7 +236,10 @@ abstract class OsTicketTheme {
 						
 						$this->currentCapture .= substr($output, $tagStart, $tagEnd - $tagStart);
 						
-						return substr($output, 0, $tagStart).$this->doCapture( substr($output, $tagEnd), $capture, $templates );
+						if ($this->bufferRelease) {
+							$this->buffer[] = substr($output, 0, $tagStart);
+						}
+						return ($this->bufferRelease ? '' : substr($output, 0, $tagStart)).$this->doCapture( substr($output, $tagEnd), $capture, $templates );
 					}
 				}
 			}
@@ -294,6 +327,13 @@ abstract class OsTicketTheme {
 }
 
 /** Helper class(es) **/
+
+class FutureTemplate {
+	public $templatePath;
+	function __construct($templatePath) {
+		$this->templatePath = $templatePath;	
+	}
+}
 
 class ArrayEventListener implements ArrayAccess {
 	const EVENT_CHECK = 1;
