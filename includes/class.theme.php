@@ -108,7 +108,8 @@ abstract class OsTicketTheme {
 				'logo' => ' id="logo"',
 				'nav' => ' id="nav"',
 				'landing' => ' id="landing_page"',
-				'footer' => ' id="footer"'
+				'content' => ' id="content"',
+				'footer' => ' id="footer"',
 			];
 			$templates = [
 				'header' => [
@@ -125,7 +126,11 @@ abstract class OsTicketTheme {
 				'landing_page' => [
 					'contains' => ['landing'],
 					'wrapInLast' => true
-				]
+				],
+				'login_page' => [
+					'contains' => ['content'],
+					'onlyOn' => ['login.php']
+				],
 			];
 			$output = $this->doCapture($output, $capture, $templates);
 		}
@@ -148,14 +153,17 @@ abstract class OsTicketTheme {
 					} else {
 						$outputTag = substr($outputTag, strlen($this->inElement) + 2);
 						foreach ($templates as $templateId => $templateData) {
-							if (in_array($this->inCapture, $templateData['contains'])) {
+							if (in_array($this->inCapture, $templateData['contains']) && (empty($templateData['onlyOn']) || in_array($this->getCurrentPage(), $templateData['onlyOn'], true))) {
 								$template = $templateId;
 								break;
 							}
 						}
 						
 						$this->currentCapture .= '</'.$this->inElement.'>';
-						$this->captures[ $this->inCapture ] = $this->currentCapture;
+						if (method_exists($this, 'processCapture_'.$this->inCapture)) {
+							$this->currentCapture = call_user_func([$this, 'processCapture_'.$this->inCapture], $this->currentCapture);
+						}
+						$this->captures[ $this->inCapture ] = '<!-- '.$this->inCapture.' -->'.$this->currentCapture.'<!-- /'.$this->inCapture.' -->';
 
 						if ($template && file_exists(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php')) {
 							if (end($templates[$template]['contains']) == $this->inCapture) {
@@ -247,9 +255,39 @@ abstract class OsTicketTheme {
 		return $output;
 	}
 	
+	function processCapture_content($capture) {
+		switch ($this->getCurrentPage()) {
+			case 'login.php':
+				$formStart = stripos($capture, '<form ');
+				if ($formStart !== false) {
+					$formEnd = stripos($capture, '</form>', $formStart);
+					if ($formEnd !== false) {
+						$formEnd += 7;
+					    $loginForm = substr($capture, $formStart, $formEnd - $formStart);
+						
+						preg_match_all('/\\<(?:form|input|button)[^\\>]*\\>/i', $loginForm, $loginFormTags);
+						$loginForm = '';
+						for ($i = 0; $i < count($loginFormTags[0]); ++$i) {
+							$loginForm .= $i ? '<div>'.$loginFormTags[0][$i].'</div>' : $loginFormTags[0][$i];
+						}
+						$loginForm .= '</form>';
+						
+						$this->captures['loginform'] = $loginForm;
+					}
+				}
+				break;
+		}
+		
+		return $capture;
+	}
+	
 	protected function getTemplate($path) {
 		extract($this->captures);
 		return include $path;
+	}
+	
+	function getCurrentPage() {
+		return basename($_SERVER['SCRIPT_FILENAME']);
 	}
 	
 	function getBaseUrl() {
