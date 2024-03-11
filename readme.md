@@ -31,6 +31,22 @@ Returns an array of JavaScript URLs to load in the page header (right before the
 
 Returns an array of JavaScript URLs to load in the page footer (right before the closing `</body>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different scripts for these areas.
 
+### `getMinimumLogoAspectRatio()`
+
+Allows the theme to override or disable the minimum aspect ratio constraint when a logo is uploaded via the admin area. By default, osTicket will output an error when attempting to upload a logo with an aspect ratio less than 2 (2:1). Returning `-1` from this function will disable the aspect ratio requirement altogether.
+
+### `isLoggedInAsClient()`
+
+Returns `true` if the current user is a logged in client.
+
+### `isLoggedInAsStaff()`
+
+Returns `true` if the current user is a logged in staff member.
+
+### `isLoggedInAsAdmin()`
+
+Returns `true` if the current user is a logged in staff member with admin privileges.
+
 ## Template Files
 
 The following template files are supported in the `templates` directory (all of these are optional and the default HTML will be rendered for any that are omitted). Each template file must return the template content as a string (do not use `echo`, etc.). Templates are only used for rendering HTML within the `<body>` tag.
@@ -50,6 +66,10 @@ Contains the footer template for the clients view.
 ### `clients/landing_page.php`
 
 Contains the landing page body template.
+
+### `clients/login_page.php`
+
+Contains the login page body template.
 
 ### `staff/header.php`
 
@@ -90,3 +110,7 @@ The default footer content HTML.
 ### $landing
 
 The default landing page body HTML. **Clients landing page template only.**
+
+### $loginform
+
+The login form HTML. **Clients login page template only.**
