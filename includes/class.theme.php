@@ -1,5 +1,5 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-03-08
+// This file was modified by Jonathan Hall on 2024-03-11
 
 abstract class OsTicketTheme {
 	const THEMES_DIR = ROOT_DIR.'themes/';
@@ -20,7 +20,46 @@ abstract class OsTicketTheme {
 	function init() {
 		global $ost;
 		
+		if (!empty($_FILES)) {
+			$_FILES = new ArrayEventListener($_FILES, [$this, 'handleUploadFilesAccess']);
+		}
+		
 		ob_start([$this, 'processOutput']);
+	}
+	
+	function getMinimumLogoAspectRatio() {
+		return 2;	
+	}
+	
+	function handleUploadFilesAccess($accessEventType, $fileId) {
+		if ($fileId == 'logo') {
+			switch ($accessEventType) {
+				case ArrayEventListener::EVENT_CHECK:
+				case ArrayEventListener::EVENT_READ:
+					$_FILES = $_FILES->unwrap();
+					try {
+						$this->handleLogoUpload($_FILES['logo']);
+						unset($_FILES['logo']);
+						return null;
+					} catch (Exception $ex) { }
+					break;
+			}
+		}
+		return true;
+	}
+	
+	private function handleLogoUpload($fileData) {
+		global $thisstaff;
+		if (isset($thisstaff) && $thisstaff->isAdmin()) {
+			$fileData = AttachmentFile::format($fileData);
+			if (!empty($fileData[0]) && empty($fileData[0]['error'])) {
+				$error = '';
+				if (AttachmentFile::uploadLogo($fileData[0], $error, $this->getMinimumLogoAspectRatio())) {
+					return true;
+				}
+			}
+		}
+		throw new Exception();
 	}
 	
 	function processOutput($output) {
@@ -252,4 +291,47 @@ abstract class OsTicketTheme {
 		
 		return $theme;
 	}
+}
+
+/** Helper class(es) **/
+
+class ArrayEventListener implements ArrayAccess {
+	const EVENT_CHECK = 1;
+	const EVENT_READ = 2;
+	const EVENT_WRITE = 3;
+	const EVENT_UNSET = 4;
+	
+	private $wrappedArray, $callback;
+	
+	function __construct($arrayToWrap, $callback) {
+		$this->wrappedArray = $arrayToWrap;
+		$this->callback = $callback;
+	}
+	
+	function offsetExists($key) {
+		return call_user_func($this->callback, self::EVENT_CHECK, $key) !== null && array_key_exists($key, $this->wrappedArray);
+	}
+	
+	function offsetGet($key) {
+		if ( call_user_func($this->callback, self::EVENT_READ, $key) !== null ){
+			return $this->wrappedArray[$key];
+		}
+	}
+	
+	function offsetSet($key, $value) {
+		if ( call_user_func($this->callback, self::EVENT_WRITE, $key) !== null ){
+			$this->wrappedArray[$key] = $value;
+		}
+	}
+	
+	function offsetUnset($key) {
+		if ( call_user_func($this->callback, self::EVENT_UNSET, $key) !== null ){
+			unset($this->wrappedArray[$key]);
+		}
+	}
+	
+	function unwrap() {
+		return $this->wrappedArray;	
+	}
+	
 }

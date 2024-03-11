@@ -1,5 +1,5 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-03-08
+// This file was modified by Jonathan Hall on 2024-03-11
 
 class ExampleTheme extends OsTicketTheme {
 	
@@ -17,6 +17,10 @@ class ExampleTheme extends OsTicketTheme {
 	
 	function getFooterScripts($isStaffView) {
 		return [ ];
+	}
+	
+	function getMinimumLogoAspectRatio() {
+		return -1;	
 	}
 	
 	
