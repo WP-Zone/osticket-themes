@@ -51,8 +51,7 @@ abstract class OsTicketTheme {
 	}
 	
 	private function handleLogoUpload($fileData) {
-		global $thisstaff;
-		if (isset($thisstaff) && $thisstaff->isAdmin()) {
+		if (self::isLoggedInAsAdmin()) {
 			$fileData = AttachmentFile::format($fileData);
 			if (!empty($fileData[0]) && empty($fileData[0]['error'])) {
 				$error = '';
@@ -138,6 +137,25 @@ abstract class OsTicketTheme {
 			
 			
 		return $output;
+	}
+	
+	static function isLoggedInAsClient() {
+		global $thisclient;
+		
+		// based on client.inc.php
+		return !empty($thisclient) && $thisclient->getId() && $thisclient->isValid();
+	}
+	
+	static function isLoggedInAsStaff() {
+		global $thisstaff;
+		
+		// based on client.inc.php
+		return !empty($thisstaff) && $thisstaff->getId() && $thisstaff->isValid();
+	}
+	
+	static function isLoggedInAsAdmin() {
+		global $thisstaff;
+		return self::isLoggedInAsStaff() && $thisstaff->isAdmin();
 	}
 	
 	function doCapture($output, $capture, $templates) {
