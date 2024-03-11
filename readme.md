@@ -19,17 +19,17 @@ An example theme is included in the `example_theme` directory.
 
 Theme classes may override the following class methods to implement theme customizations:
 
-### `getHeaderStyles()`
+### `getHeaderStyles($isStaffView)`
 
-Returns an array of CSS stylesheet URLs to load in the page header (right before the closing `</head>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash.
+Returns an array of CSS stylesheet URLs to load in the page header (right before the closing `</head>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different stylesheets for these areas.
 
-### `getHeaderScripts()`
+### `getHeaderScripts($isStaffView)`
 
-Returns an array of JavaScript URLs to load in the page header (right before the closing `</head>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash.
+Returns an array of JavaScript URLs to load in the page header (right before the closing `</head>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different scripts for these areas.
 
-### `getFooterScripts()`
+### `getFooterScripts($isStaffView)`
 
-Returns an array of JavaScript URLs to load in the page footer (right before the closing `</body>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash.
+Returns an array of JavaScript URLs to load in the page footer (right before the closing `</body>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different scripts for these areas.
 
 ## Template Files
 
