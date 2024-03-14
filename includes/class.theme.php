@@ -1,5 +1,5 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-03-11
+// This file was modified by Jonathan Hall on 2024-03-14
 
 abstract class OsTicketTheme {
 	const THEMES_DIR = ROOT_DIR.'themes/';
@@ -303,6 +303,21 @@ abstract class OsTicketTheme {
 				}
 				break;
 			case 'login.php':
+				$this->captures['loginerror'] = '';
+				$errorElementIdPos = stripos($capture, ' id="msg_error"');
+				if ($errorElementIdPos) {
+					$errorElementStartPos = strrpos($capture, '<', $errorElementIdPos - strlen($capture));
+					if ($errorElementStartPos !== false) {
+						$errorElementTag = strstr( substr($capture, $errorElementStartPos + 1), ' ', true );
+						if ($errorElementTag) {
+							$errorElementEndPos = stripos($capture, '</'.$errorElementTag.'>', $errorElementStartPos) + strlen($errorElementTag) + 3;
+							if ($errorElementEndPos) {
+								$this->captures['loginerror'] = substr($capture, $errorElementStartPos, $errorElementEndPos - $errorElementStartPos);
+							}
+						}
+					}
+				}
+				// no break
 			case 'tickets.php':
 				$formStart = stripos($capture, '<form ');
 				if ($formStart !== false) {
