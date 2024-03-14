@@ -130,6 +130,14 @@ abstract class OsTicketTheme {
 					'contains' => ['content'],
 					'onlyOn' => ['login.php']
 				],
+				'tickets' => [
+					'contains' => ['content'],
+					'onlyOn' => [ 'tickets.php']
+				],
+				'view' => [
+					'contains' => ['content'],
+					'onlyOn' => ['view.php']
+				],
 			];
 			$output = $this->doCapture($output, $capture, $templates);
 		}
@@ -275,21 +283,41 @@ abstract class OsTicketTheme {
 	
 	function processCapture_content($capture) {
 		switch ($this->getCurrentPage()) {
+			case 'view.php':
+				$formStart = stripos($capture, '<form ');
+				if ($formStart !== false) {
+					$formEnd = stripos($capture, '</form>', $formStart);
+					if ($formEnd !== false) {
+						$formEnd += 7;
+						$ticketStatusForm = substr($capture, $formStart, $formEnd - $formStart);
+
+						preg_match_all('/<(form|input|button)[^>]*>|<label[^>]*>.*?<\/label>/is', $ticketStatusForm, $formTags);
+						$ticketStatusForm = '';
+						for ($i = 0; $i < count($formTags[0]); ++$i) {
+							$ticketStatusForm .= $i ? '<div>'.$formTags[0][$i].'</div>' : $formTags[0][$i];
+						}
+						$ticketStatusForm .= '</form>';
+
+						$this->captures['ticketstatusform'] = $ticketStatusForm;
+					}
+				}
+				break;
 			case 'login.php':
+			case 'tickets.php':
 				$formStart = stripos($capture, '<form ');
 				if ($formStart !== false) {
 					$formEnd = stripos($capture, '</form>', $formStart);
 					if ($formEnd !== false) {
 						$formEnd += 7;
 					    $loginForm = substr($capture, $formStart, $formEnd - $formStart);
-						
+
 						preg_match_all('/\\<(?:form|input|button)[^\\>]*\\>/i', $loginForm, $loginFormTags);
 						$loginForm = '';
 						for ($i = 0; $i < count($loginFormTags[0]); ++$i) {
 							$loginForm .= $i ? '<div>'.$loginFormTags[0][$i].'</div>' : $loginFormTags[0][$i];
 						}
 						$loginForm .= '</form>';
-						
+
 						$this->captures['loginform'] = $loginForm;
 					}
 				}
