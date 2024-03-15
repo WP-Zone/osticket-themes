@@ -21,19 +21,29 @@ Theme classes may override the following class methods to implement theme custom
 
 ### `getHeaderStyles($isStaffView)`
 
-Returns an array of CSS stylesheet URLs to load in the page header (right before the closing `</head>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different stylesheets for these areas.
+Returns an array of CSS stylesheets to load in the page header (right before the closing `</head>` tag). Each stylesheet can be specified as a string or an array with key `url` (absolute URL of the stylesheet) or `path` (path to the stylesheet relative to the theme's directory). If needed, use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different stylesheets for these areas.
+
+If the stylesheet is specified as an array with the `path` key, it can also set the `dynamic` key to `true` to indicate that the stylesheet includes dynamic fields that need to be merged with the theme settings. Dynamic fields are specified as comment tags wrapping the default value in the format `/*@$variable*/` for the opening tag and `/*$variable@*/` for the closing tag, where `variable` is the ID of the theme setting. For example, the CSS declaration `color: /*@$primaryColor*/#000000/*$primaryColor@*/;` indicates that the `color` property should be set to the value of the `primaryColor` theme setting, with `#000000` being the default value. When necessary, dynamic stylesheets are merged with the theme settings, with the resulting merged CSS saved in a separate file.
 
 ### `getHeaderScripts($isStaffView)`
 
-Returns an array of JavaScript URLs to load in the page header (right before the closing `</head>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different scripts for these areas.
+Returns an array of JavaScript files to load in the page header (right before the closing `</head>` tag). Each script can be specified as a string or an array with key `url` (absolute URL of the script) or `path` (path to the script relative to the theme's directory). If needed, use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different scripts for these areas.
 
 ### `getFooterScripts($isStaffView)`
 
-Returns an array of JavaScript URLs to load in the page footer (right before the closing `</body>` tag). Use the `getBaseUrl()` helper method to get the base URL of the theme, including trailing slash. `$isStaffView` is `true` if the current page is in the staff/agent area and `false` if it is in the client area, and can be used to load different scripts for these areas.
+Returns an array of JavaScript files to load in the page footer (right before the closing `</body>` tag). See `getHeaderScripts()` for more details.
 
 ### `getMinimumLogoAspectRatio()`
 
 Allows the theme to override or disable the minimum aspect ratio constraint when a logo is uploaded via the admin area. By default, osTicket will output an error when attempting to upload a logo with an aspect ratio less than 2 (2:1). Returning `-1` from this function will disable the aspect ratio requirement altogether.
+
+### `getThemeSettingsFields()`
+
+Can be overridden by the theme to provide some theme-specific settings that can be changed by admin users. Returns an associative array (keyed by setting IDs) of osTicket FormField objects. As of osTicket 1.18, core form field types are `TextboxField`, `TextareaField`, `PhoneField`, `BooleanField`, `ChoiceField`, `NumericField`, `DatetimeField`, `TimeField`, `SectionBreakField`, `ThreadEntryField`, `FileUploadField`, `ColorChoiceField`, `InlineFormField`, `InlineDynamicFormField`, and `FreeTextField`.
+
+### `getThemeSettings()`
+
+Returns the currently set values for theme settings defined by `getThemeSettingsFields()`.
 
 ### `isLoggedInAsClient()`
 
