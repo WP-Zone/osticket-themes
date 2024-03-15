@@ -45,6 +45,10 @@ Can be overridden by the theme to provide some theme-specific settings that can 
 
 Returns the currently set values for theme settings defined by `getThemeSettingsFields()`.
 
+### `__()` and `_N()`
+
+Each theme has its own `__()` and `_N()` translation methods to enable translation of text in the theme. Note that these also exist as functions with the same names; the theme versions must be called as class methods on the theme class, for example `$this->__('Sample text')`.
+
 ### `isLoggedInAsClient()`
 
 Returns `true` if the current user is a logged in client.
