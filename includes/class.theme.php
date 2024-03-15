@@ -11,6 +11,8 @@ abstract class OsTicketTheme {
 	protected $captures = [];
 	protected $buffer = [];
 	protected $bufferRelease = [];
+	protected $translationCallback;
+	protected $pluralTranslationCallback;
 	
 	function __construct($themeId) {
 		if (!self::validateThemeId($themeId)) {
@@ -39,6 +41,24 @@ abstract class OsTicketTheme {
 	
 	function getThemeSettingsFields() {
 		return [];
+	}
+	
+	function setupTranslation() {
+		$callbacks = Plugin::translate('osttheme', [ 'path' => self::THEMES_DIR.$this->themeId ]);
+		if ($callbacks) {
+			$this->translationCallback = $callbacks[0];
+			if (count($callbacks) > 1) {
+				$this->pluralTranslationCallback = $callbacks[1];
+			}
+		}
+	}
+	
+	function __($text) {
+		return $this->translationCallback || ($this->setupTranslation() && $this->translationCallback) ? $this->translationCallback($text) : $text;
+	}
+	
+	function _N($text) {
+		return $this->pluralTranslationCallback || ($this->setupTranslation() && $this->pluralTranslationCallback) ? $this->pluralTranslationCallback($text) : $text;
 	}
 	
 	function handleUploadFilesAccess($accessEventType, $fileId) {
