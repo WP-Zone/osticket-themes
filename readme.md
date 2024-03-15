@@ -47,7 +47,7 @@ Returns the currently set values for theme settings defined by `getThemeSettings
 
 ### `__()` and `_N()`
 
-Each theme has its own `__()` and `_N()` translation methods to enable translation of text in the theme. Note that these also exist as functions with the same names; the theme versions must be called as class methods on the theme class, for example `$this->__('Sample text')`.
+Each theme has its own `__()` and `_N()` translation methods to enable translation of text in the theme. Note that these also exist as functions with the same names; the theme versions must be called as class methods on the theme class, for example `$this->__('Sample text')`. Each theme can store its translation files in a `LC_MESSAGES` directory within its own theme directory. The domain for translation is `osttheme` (the domain does not need to be specified when using the theme's translation methods).
 
 ### `isLoggedInAsClient()`
 
