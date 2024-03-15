@@ -121,4 +121,8 @@ The default landing page body HTML. **Clients landing page template only.**
 
 ### $loginform
 
-The login form HTML. **Clients login page, tickets page, and check ticket status page templates only.**
+The login form HTML. **Clients login page and tickets page only.**
+
+### $ticketstatusform
+
+The check ticket status form HTML. **Clients check ticket status page only.**
