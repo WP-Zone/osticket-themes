@@ -71,6 +71,14 @@ Contains the landing page body template.
 
 Contains the login page body template.
 
+### `clients/tickets.php`
+
+Contains the tickets page body template.
+
+### `clients/view.php`
+
+Contains the check ticket status page body template.
+
 ### `staff/header.php`
 
 Contains the header (above navigation) template for the staff view.
@@ -113,4 +121,4 @@ The default landing page body HTML. **Clients landing page template only.**
 
 ### $loginform
 
-The login form HTML. **Clients login page template only.**
+The login form HTML. **Clients login page, tickets page, and check ticket status page templates only.**
