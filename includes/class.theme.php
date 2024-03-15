@@ -326,7 +326,7 @@ abstract class OsTicketTheme {
 						$formEnd += 7;
 					    $loginForm = substr($capture, $formStart, $formEnd - $formStart);
 
-						preg_match_all('/\\<(?:form|input|button)[^\\>]*\\>/i', $loginForm, $loginFormTags);
+						preg_match_all('/<(form|input|button)[^>]*>|<label[^>]*>.*?<\/label>/is', $loginForm, $loginFormTags);
 						$loginForm = '';
 						for ($i = 0; $i < count($loginFormTags[0]); ++$i) {
 							$loginForm .= $i ? '<div>'.$loginFormTags[0][$i].'</div>' : $loginFormTags[0][$i];
