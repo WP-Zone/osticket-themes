@@ -137,6 +137,18 @@ The default landing page body HTML. **Clients landing page template only.**
 
 The login form HTML. **Clients login page and tickets page only.**
 
+### $loginerror
+
+The login error message HTML, if there is an error message (empty string otherwise). **Clients login page only.**
+
+### $loginnotice
+
+The login notice message HTML, if there is a notice message (empty string otherwise). **Clients login page only.**
+
+### $loginwarning
+
+The login warning message HTML, if there is a warning message (empty string otherwise). **Clients login page only.**
+
 ### $ticketstatusform
 
 The check ticket status form HTML. **Clients check ticket status page only.**
