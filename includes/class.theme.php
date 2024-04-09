@@ -1,5 +1,5 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-04-02
+// This file was modified by Jonathan Hall on 2024-04-08
 
 abstract class OsTicketTheme {
 	const THEMES_DIR = ROOT_DIR.'themes/';
@@ -107,13 +107,16 @@ abstract class OsTicketTheme {
 			$output = substr($output, 0, $bodyPos).$extraFoot.substr($output, $bodyPos);
 		}
 		
-		if ($thisstaff) {
+		if ($thisstaff || $this->getCurrentPage() == 'scp/login.php') {
 			$capture = [
+				'loginbackground' => ' id="brickwall"',
+				'logincontent' => ' id="loginBox"',
+				'poweredby' => ' id="poweredBy"',
 				'topnav' => ' id="info"',
 				'logo' => ' id="logo"',
 				'nav' => ' id="nav"',
 				'subnav' => '<nav ',
-				'footer' => ' id="footer"'
+				'footer' => ' id="footer"',
 			];
 			$templates = [
 				'header' => [
@@ -126,6 +129,9 @@ abstract class OsTicketTheme {
 				'footer' => [
 					'contains' => ['footer'],
 					'wrapInLast' => true
+				],
+				'login_page' => [
+					'contains' => ['loginbackground', 'logincontent', 'poweredby']
 				]
 			];
 			$output = $this->doCapture($output, $capture, $templates);
@@ -218,8 +224,10 @@ abstract class OsTicketTheme {
 							$this->currentCapture = call_user_func([$this, 'processCapture_'.$this->inCapture], $this->currentCapture);
 						}
 						$this->captures[ $this->inCapture ] = '<!-- '.$this->inCapture.' -->'.$this->currentCapture.'<!-- /'.$this->inCapture.' -->';
+						
+						$templatePath = self::THEMES_DIR.$this->themeId.'/templates/'.(($thisstaff || $this->getCurrentPage() == 'scp/login.php') ? 'staff' : 'clients').'/'.$template.'.php';
 
-						if ($template && file_exists(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php')) {
+						if ($template && file_exists($templatePath)) {
 							if (end($templates[$template]['contains']) == $this->inCapture) {
 								$captureReplacementStart = '';
 								$captureReplacementEnd = '';
@@ -240,10 +248,10 @@ abstract class OsTicketTheme {
 								if ($this->bufferRelease) {
 									$captureReplacement = '';
 									$this->buffer[] = $captureReplacementStart;
-									$this->buffer[] = new FutureTemplate(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php');
+									$this->buffer[] = new FutureTemplate($templatePath);
 									$this->buffer[] = $captureReplacementEnd;
 								} else {
-									$captureReplacement = $captureReplacementStart.$this->getTemplate(self::THEMES_DIR.$this->themeId.'/templates/'.($thisstaff ? 'staff' : 'clients').'/'.$template.'.php').$captureReplacementEnd;
+									$captureReplacement = $captureReplacementStart.$this->getTemplate($templatePath).$captureReplacementEnd;
 								}
 							} else {
 								$captureReplacement = '';
@@ -373,13 +381,61 @@ abstract class OsTicketTheme {
 		return $capture;
 	}
 	
+	function processCapture_logincontent($capture) {
+		$logoContainerElementIdPos = stripos($capture, ' id="logo"');
+		if ($logoContainerElementIdPos) {
+			$logoStartPos = stripos($capture, '<img ', $messageElementIdPos);
+			if ($logoStartPos !== false) {
+				$this->captures['logo'] = strstr(substr($capture, $logoStartPos), '>', true).'>';
+			}
+		}
+		
+		$messageElementIdPos = stripos($capture, ' id="login-message"');
+		if ($messageElementIdPos) {
+			$messageStartPos = strpos($capture, '>', $messageElementIdPos);
+			if ($messageStartPos !== false) {
+				++$messageStartPos;
+				$this->captures['loginnotice'] = strstr(substr($capture, $messageStartPos), '<', true);
+			}
+		}
+		
+		$formStart = stripos($capture, '<form ');
+		if ($formStart !== false) {
+			$formEnd = stripos($capture, '</form>', $formStart);
+			if ($formEnd !== false) {
+				$formEnd += 7;
+				$ticketStatusForm = substr($capture, $formStart, $formEnd - $formStart);
+
+				$this->captures['loginform'] = $ticketStatusForm;
+			}
+		}
+		
+		
+		$companyElementIdPos = stripos($capture, ' id="company"');
+		if ($companyElementIdPos !== false) {
+			$companyContentElementIdPos = stripos($capture, ' class="content"', $companyElementIdPos);
+			if ($companyContentElementIdPos !== false) {
+				$companyContentPos = strpos($capture, '>', $companyContentElementIdPos);
+				if ($companyContentPos !== false) {
+					++$companyContentPos;
+					$this->captures['copyright'] = strstr(substr($capture, $companyContentPos), '<', true);
+				}
+			}
+		}
+		
+		$banner = Page::lookupByType('banner-staff');
+		$this->captures['loginbanner'] = $banner ? Format::display($banner->getLocalBody()) : '';
+		
+		return $capture;
+	}
+	
 	protected function getTemplate($path) {
 		extract($this->captures);
 		return include $path;
 	}
 	
 	function getCurrentPage() {
-		return basename($_SERVER['SCRIPT_FILENAME']);
+		return (basename(dirname($_SERVER['SCRIPT_FILENAME'])) == 'scp' ? 'scp/' : '').basename($_SERVER['SCRIPT_FILENAME']);
 	}
 	
 	function getBaseUrl() {
