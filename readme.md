@@ -105,13 +105,17 @@ Contains the navigation template (tabs and secondary navigation bar) for the sta
 
 Contains the footer template for the staff view.
 
+### `staff/login_page.php`
+
+Contains the login page body template for the staff view.
+
 ## Template Variables
 
 The following variables contain HTML for various system-generated elements that can be used in templates. These variables are not guaranteed to be set.
 
 ### $logo
 
-The HTML for the linked logo image, typically shown in the header.
+The HTML for the linked logo image, typically shown in the header. On the staff login page, `$logo` contains the `<img>` tag only (not linked).
 
 ### $topnav
 
@@ -135,7 +139,7 @@ The default landing page body HTML. **Clients landing page template only.**
 
 ### $loginform
 
-The login form HTML. **Clients login page and tickets page only.**
+The login form HTML. **Staff login page, clients login page, and tickets page only.**
 
 ### $loginerror
 
@@ -143,11 +147,31 @@ The login error message HTML, if there is an error message (empty string otherwi
 
 ### $loginnotice
 
-The login notice message HTML, if there is a notice message (empty string otherwise). **Clients login page only.**
+The login notice message HTML, if there is a notice message (empty string otherwise). On the staff login page, all login messages are considered notices (including errors and warnings). **Clients and staff login page only.**
 
 ### $loginwarning
 
 The login warning message HTML, if there is a warning message (empty string otherwise). **Clients login page only.**
+
+### $loginbackground
+
+The background image `<div>`. Other elements must be positioned above this `<div>` to be visible. **Staff login page only.**
+
+### $logincontent
+
+The login form container, including the login form and other elements. **Staff login page only.**
+
+### $loginbanner
+
+The login banner text or HTML, set at Settings > Agents > Templates > Sign-in Login Banner. **Staff login page only.**
+
+### $poweredby
+
+The "Powered by osTicket" message/graphic. **Staff login page only.**
+
+### $copyright
+
+The copyright notice text or HTML. **Staff login page only.**
 
 ### $ticketstatusform
 
