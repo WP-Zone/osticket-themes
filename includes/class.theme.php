@@ -1,5 +1,5 @@
 <?php
-// This file was modified by Jonathan Hall on 2024-04-08
+// This file was modified by Jonathan Hall on 2024-04-11
 
 abstract class OsTicketTheme {
 	const THEMES_DIR = ROOT_DIR.'themes/';
@@ -13,6 +13,8 @@ abstract class OsTicketTheme {
 	protected $bufferRelease = [];
 	protected $translationCallback;
 	protected $pluralTranslationCallback;
+	protected static $debug = false;
+	protected $debugMessages = [];
 	
 	function __construct($themeId) {
 		if (!self::validateThemeId($themeId)) {
@@ -108,32 +110,45 @@ abstract class OsTicketTheme {
 		}
 		
 		if ($thisstaff || $this->getCurrentPage() == 'scp/login.php') {
-			$capture = [
-				'loginbackground' => ' id="brickwall"',
-				'logincontent' => ' id="loginBox"',
-				'poweredby' => ' id="poweredBy"',
-				'topnav' => ' id="info"',
-				'logo' => ' id="logo"',
-				'nav' => ' id="nav"',
-				'subnav' => '<nav ',
-				'footer' => ' id="footer"',
-			];
-			$templates = [
-				'header' => [
-					'contains' => ['topnav', 'logo'],
-					'holdUntil' => ['nav', 'footer']
-				],
-				'nav' => [
-					'contains' => ['nav', 'subnav']
-				],
-				'footer' => [
-					'contains' => ['footer'],
-					'wrapInLast' => true
-				],
-				'login_page' => [
-					'contains' => ['loginbackground', 'logincontent', 'poweredby']
-				]
-			];
+			$isPjax = self::isPjaxRequest();
+			if ($isPjax) {
+				$capture = [
+					'nav' => ' id="nav"',
+					'subnav' => '<nav ',
+				];
+				$templates = [
+					'nav' => [
+						'contains' => ['nav', 'subnav']
+					]
+				];
+			} else {
+				$capture = [
+					'loginbackground' => ' id="brickwall"',
+					'logincontent' => ' id="loginBox"',
+					'poweredby' => ' id="poweredBy"',
+					'topnav' => ' id="info"',
+					'logo' => ' id="logo"',
+					'nav' => ' id="nav"',
+					'subnav' => '<nav ',
+					'footer' => ' id="footer"',
+				];
+				$templates = [
+					'header' => [
+						'contains' => ['topnav', 'logo'],
+						'holdUntil' => ['nav', 'footer']
+					],
+					'nav' => [
+						'contains' => ['nav', 'subnav']
+					],
+					'footer' => [
+						'contains' => ['footer'],
+						'wrapInLast' => true
+					],
+					'login_page' => [
+						'contains' => ['loginbackground', 'logincontent', 'poweredby']
+					]
+				];
+			}
 			$output = $this->doCapture($output, $capture, $templates);
 		} else {
 			$capture = [
@@ -200,6 +215,11 @@ abstract class OsTicketTheme {
 		return self::isLoggedInAsStaff() && $thisstaff->isAdmin();
 	}
 	
+	static function isPjaxRequest() {
+		global $thisstaff;
+		return !empty($thisstaff) && isset($_SERVER['HTTP_X_PJAX']);
+	}
+	
 	function doCapture($output, $capture, $templates) {
 		global $thisstaff;
 		if ($this->inCapture) {
@@ -228,7 +248,9 @@ abstract class OsTicketTheme {
 						$templatePath = self::THEMES_DIR.$this->themeId.'/templates/'.(($thisstaff || $this->getCurrentPage() == 'scp/login.php') ? 'staff' : 'clients').'/'.$template.'.php';
 
 						if ($template && file_exists($templatePath)) {
+							$this->debugLog('Found template '.$templatePath);
 							if (end($templates[$template]['contains']) == $this->inCapture) {
+								$this->debugLog('Proceeding with template');
 								$captureReplacementStart = '';
 								$captureReplacementEnd = '';
 								if (!empty($templates[$template]['wrapInLast'])) {
@@ -246,6 +268,7 @@ abstract class OsTicketTheme {
 								}
 								
 								if ($this->bufferRelease) {
+									$this->debugLog('Adding FutureTemplate to buffer');
 									$captureReplacement = '';
 									$this->buffer[] = $captureReplacementStart;
 									$this->buffer[] = new FutureTemplate($templatePath);
@@ -254,6 +277,7 @@ abstract class OsTicketTheme {
 									$captureReplacement = $captureReplacementStart.$this->getTemplate($templatePath).$captureReplacementEnd;
 								}
 							} else {
+								$this->debugLog('Not using template yet because this isn\'t the last capture in the template, waiting until: '.end($templates[$template]['contains']));
 								$captureReplacement = '';
 							}
 						} else {
@@ -273,14 +297,17 @@ abstract class OsTicketTheme {
 							$this->bufferRelease = [];
 							$this->buffer = [];
 						}
-
+						
+						$this->debugLog('End capture '.$this->inCapture.', last 50 characters: '.json_encode(substr($this->currentCapture, -50)));
 
 						$this->inElement = null;
 
 						$this->currentCapture = '';
 						$this->inCapture = null;
 
-						return $buffer
+						return 
+							$this->getDebugLogOutput()
+							.$buffer
 							.$captureReplacement
 							.$this->doCapture(
 							$outputTag.(count($outputTags) > $i + 1 ? '<'.implode('<', array_slice($outputTags, $i + 1)) : ''),
@@ -304,16 +331,30 @@ abstract class OsTicketTheme {
 						$this->inElement = substr($output, $tagStart + 1, $tagNameEnd - $tagStart - 1);
 						$this->inCapture = $captureKey;
 						
+						$this->debugLog('Start capture '.$captureKey);
+						
 						$this->currentCapture .= substr($output, $tagStart, $tagEnd - $tagStart);
 						
 						if ($this->bufferRelease) {
 							$this->buffer[] = substr($output, 0, $tagStart);
 						}
-						return ($this->bufferRelease ? '' : substr($output, 0, $tagStart)).$this->doCapture( substr($output, $tagEnd), $capture, $templates );
+						return $this->getDebugLogOutput().($this->bufferRelease ? '' : substr($output, 0, $tagStart)).$this->doCapture( substr($output, $tagEnd), $capture, $templates );
 					}
 				}
 			}
 		}
+		return $this->getDebugLogOutput().$output;
+	}
+	
+	function debugLog($message) {
+		if (self::$debug) {
+			$this->debugMessages[] = $message;
+		}
+	}
+	
+	function getDebugLogOutput() {
+		$output = $this->debugMessages ? "\n".'<!--'."\n".'DEBUG:'."\n".htmlspecialchars(implode("\n", $this->debugMessages))."\n".'-->' : '';
+		$this->debugMessages = [];
 		return $output;
 	}
 	
